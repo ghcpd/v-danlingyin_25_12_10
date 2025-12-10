@@ -1,0 +1,41 @@
+{
+  "summary": {
+    "total_vulnerabilities": 3,
+    "critical": 0,
+    "high": 0,
+    "medium": 2,
+    "low": 1
+  },
+  "details": [
+    {
+      "id": 1,
+      "file": "input_backup.ts",
+      "line_numbers": [10,11,12],
+      "vulnerability_type": "Information Exposure via Error Message",
+      "severity": "Low",
+      "description": "Constructor for EnvVarMissingError included the environment variable name in the error message, which may leak sensitive configuration details into logs or user-facing errors.",
+      "fix_explanation": "Make the thrown error message generic and do not reveal environment variable names in error messages. Keep the varName as error metadata rather than the text message.",
+      "secure_code_snippet": "class EnvVarMissingError extends Error {\n  constructor(public varName: string) {\n    // Generic message to avoid revealing specific environment variable names\n    super('Missing required environment variable');\n    this.name = 'EnvVarMissingError';\n  }\n}"
+    },
+    {
+      "id": 2,
+      "file": "input_backup.ts",
+      "line_numbers": [48,49,50,51,52,53],
+      "vulnerability_type": "Potential Secret Exposure (private key returned as string)",
+      "severity": "Medium",
+      "description": "loadPrivateKeySync returned the private key as a UTF-8 string which increases risk of accidental logging or exposure. Returning binary Buffer is safer and reduces accidental logging of key material.",
+      "fix_explanation": "Return a Buffer instance from loadPrivateKeySync instead of converting to a string; callers can explicit convert only when needed. Add comments warning about accidental logging.",
+      "secure_code_snippet": "export function loadPrivateKeySync(): Buffer | undefined {\n  const p = getPrivateKeyPath();\n  if (!p) return undefined;\n  try {\n    const buf = fs.readFileSync(p);\n    // Return Buffer to avoid accidental logging of raw private key string content\n    return buf;\n  } catch (e) {\n    return undefined;\n  }\n}"
+    },
+    {
+      "id": 3,
+      "file": "input_backup.ts",
+      "line_numbers": [64,65],
+      "vulnerability_type": "Password hashing iteration bounds missing",
+      "severity": "Medium",
+      "description": "Original code enforced only an upper bound for PBKDF2 iterations, which allowed weak stored hashes with very low iteration counts. Also the configured MAX_ITERATIONS was large and could be abused.\n",
+      "fix_explanation": "Enforce both a minimum and maximum iteration count (MIN_ITERATIONS and MAX_ITERATIONS) and validate stored hashes fall within that range; tune values for your environment.",
+      "secure_code_snippet": "const MIN_ITERATIONS = 10000;\nconst MAX_ITERATIONS = 100000;\n...\nif (iterations < MIN_ITERATIONS || iterations > MAX_ITERATIONS) return false;"
+    }
+  ]
+}
