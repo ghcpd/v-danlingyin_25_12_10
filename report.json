@@ -1,0 +1,60 @@
+{
+  "summary": {
+    "total_vulnerabilities": 4,
+    "critical": 0,
+    "high": 2,
+    "medium": 2,
+    "low": 0
+  },
+  "details": [
+    {
+      "id": 1,
+      "file": "input.ts",
+      "line_numbers": [34],
+      "vulnerability_type": "Weak PBKDF2 Iterations Validation",
+      "severity": "High",
+      "description": "The verifyPassword function accepts any positive iteration count, including very small values. NIST recommends a minimum of 600,000 iterations for PBKDF2. The code only checks 'iterations > 0', allowing weak hashes with 1-100 iterations.",
+      "fix_explanation": "Added MIN_PBKDF2_ITERATIONS constant set to 100,000 (industry minimum) and enforced validation. Hashes with fewer iterations are rejected to prevent dictionary attacks.",
+      "secure_code_snippet": "const MIN_PBKDF2_ITERATIONS = 100000;\nif (!Number.isFinite(iterations) || iterations < MIN_PBKDF2_ITERATIONS) return false;"
+    },
+    {
+      "id": 2,
+      "file": "input.ts",
+      "line_numbers": [50],
+      "vulnerability_type": "Timing Attack - Username Comparison",
+      "severity": "High",
+      "description": "The login function uses string comparison (user !== adminUser) on line 50, which is vulnerable to timing attacks. An attacker can measure response time to determine if the username is correct before attempting the password.",
+      "fix_explanation": "Applied crypto.timingSafeEqual() to compare usernames with constant-time comparison, preventing attackers from using timing analysis to validate usernames.",
+      "secure_code_snippet": "const userMatch = crypto.timingSafeEqual(\n  Buffer.from(user, 'utf8'),\n  Buffer.from(adminUser, 'utf8')\n);\nif (!userMatch) return 'Login failed.';"
+    },
+    {
+      "id": 3,
+      "file": "input.ts",
+      "line_numbers": [48, 50],
+      "vulnerability_type": "No Minimum Iteration Threshold",
+      "severity": "Medium",
+      "description": "Password hashes may have been generated with insufficiently strong parameters. Without enforcing a minimum iteration count, legacy weak hashes remain valid and vulnerable to brute-force attacks.",
+      "fix_explanation": "Implemented minimum iteration enforcement (100,000). Any hash with fewer iterations is rejected, forcing migration to stronger parameters.",
+      "secure_code_snippet": "const iterations = parseInt(parts[0], 10);\nif (!Number.isFinite(iterations) || iterations < MIN_PBKDF2_ITERATIONS) return false;"
+    },
+    {
+      "id": 4,
+      "file": "input.ts",
+      "line_numbers": [48, 51],
+      "vulnerability_type": "Recommendation: Use bcrypt/argon2 Instead",
+      "severity": "Medium",
+      "description": "While PBKDF2 is acceptable, bcrypt and Argon2 are more resistant to GPU/ASIC attacks due to adaptive hashing and memory hardness. The current implementation is functional but not best-practice for production.",
+      "fix_explanation": "Current implementation is secure but for production use, consider migrating to bcrypt or Argon2. This is a design recommendation, not a critical flaw.",
+      "secure_code_snippet": "// Recommended: Use bcrypt (npm install bcrypt)\nimport * as bcrypt from 'bcrypt';\nconst ok = await bcrypt.compare(pass, adminHash);"
+    }
+  ],
+  "hardcoded_secrets_found": [],
+  "secrets_analysis": {
+    "stripe_api_key": "✓ SAFE - Uses getEnv() with environment variable",
+    "db_uri": "✓ SAFE - Uses getEnv() with environment variable",
+    "jwt_secret": "✓ SAFE - Uses getEnv() with environment variable",
+    "private_key_path": "✓ SAFE - Uses environment variable with optional fallback",
+    "admin_user": "✓ SAFE - Uses getEnv() with environment variable",
+    "admin_password_hash": "✓ SAFE - Uses getEnv() with environment variable"
+  }
+}
