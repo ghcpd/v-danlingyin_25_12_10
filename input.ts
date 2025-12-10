@@ -25,16 +25,30 @@ export function getPrivateKeyPath(): string | undefined {
 export function getAdminUser(): string { return getEnv('ADMIN_USER'); }
 export function getAdminPasswordHash(): string { return getEnv('ADMIN_PASSWORD_HASH'); }
 
-import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 
-// Password verify function using bcrypt.
+// A simple password verify function using PBKDF2 (example). Applications should use a well-tested library like bcrypt.
 export function verifyPassword(password: string, storedHash: string): boolean {
   // storedHash expected format: iterations$salt$derivedHex
   try {
-    return bcrypt.compareSync(password, storedHash);
+    const parts = storedHash.split('$');
+    if (parts.length !== 3) return false;
+    const iterations = parseInt(parts[0], 10);
+    if (!Number.isFinite(iterations) || iterations <= 0) return false;
+    const salt = Buffer.from(parts[1], 'hex');
+    const derived = parts[2];
+
+    // compute derived key safely
+    const derivedCheck = crypto.pbkdf2Sync(password, salt, iterations, 32, 'sha256').toString('hex');
+    const a = Buffer.from(derivedCheck, 'hex');
+    const b = Buffer.from(derived, 'hex');
+
+    // timingSafeEqual requires equal lengths — guard against malformed storedHash
+    if (a.length !== b.length) return false;
+    return crypto.timingSafeEqual(a, b);
   } catch (err) {
+    // On any error, fail safe and do not throw — return false
     return false;
-  }
   }
 }
 
