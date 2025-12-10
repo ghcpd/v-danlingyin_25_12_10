@@ -1,0 +1,41 @@
+{
+  "summary": {
+    "total_vulnerabilities": 3,
+    "critical": 0,
+    "high": 0,
+    "medium": 2,
+    "low": 1
+  },
+  "details": [
+    {
+      "id": 1,
+      "file": "input.ts",
+      "line_numbers": [91,123],
+      "vulnerability_type": "In-memory rate limiter resets on process restart (DoS/resilience)",
+      "severity": "Medium",
+      "description": "Throttling state is stored in process memory (Map) and will be lost on process restart, enabling repeated brute-force attempts after restarts and reducing resilience to distributed attacks.",
+      "fix_explanation": "Replaced the in-memory Map with a file-backed rate limit store persisted to a configurable path (RATE_LIMIT_STORE). Added helper functions to load/save rate limit state and use secure file permissions.",
+      "secure_code_snippet": "// Persistent file-backed throttling store\nconst RATE_LIMIT_STORE = process.env['RATE_LIMIT_STORE'] || path.resolve(process.cwd(), '.rate_limit_store.json');\nfunction getRateLimitState(user) { ... }\nfunction setRateLimitState(user, state) { ... }"
+    },
+    {
+      "id": 2,
+      "file": "input.ts",
+      "line_numbers": [54],
+      "vulnerability_type": "Weak KDF iteration threshold",
+      "severity": "Medium",
+      "description": "The minimum PBKDF2 iteration count was set to 100000 which may be below current recommended cost parameters depending on deployment; low iterations reduce brute-force resistance.",
+      "fix_explanation": "Raised MIN_PBKDF2_ITERATIONS to 310000 to match modern guidance (adjust per deployment) and increased derived key size.",
+      "secure_code_snippet": "const MIN_PBKDF2_ITERATIONS = 310000;"
+    },
+    {
+      "id": 3,
+      "file": "input.ts",
+      "line_numbers": [26,44],
+      "vulnerability_type": "Platform-specific permission checks & blocking file I/O",
+      "severity": "Low",
+      "description": "Private key loading relies on POSIX permission checks and performs synchronous file IO; on Windows the permission check is skipped and synchronous IO may block event loop.",
+      "fix_explanation": "Recommend configuring PRIVATE_KEY_PATH to a secure directory and using asynchronous IO in performance-sensitive paths. When possible enforce OS-specific ownership/ACL checks in a deployment script.",
+      "secure_code_snippet": "// Use PRIVATE_KEY_PATH under controlled directory and validate file permissions before reading"
+    }
+  ]
+}
