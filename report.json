@@ -1,0 +1,31 @@
+{
+  "summary": {
+    "total_vulnerabilities": 2,
+    "critical": 0,
+    "high": 0,
+    "medium": 1,
+    "low": 1
+  },
+  "details": [
+    {
+      "id": 1,
+      "file": "input_backup.ts",
+      "line_numbers": [4,5,6,7,8],
+      "vulnerability_type": "Information exposure via error message",
+      "severity": "Low",
+      "description": "getEnv throws an error that includes the name of the missing environment variable — this can reveal environment variable names in logs or stack traces.",
+      "fix_explanation": "Remove the environment-variable name from user-facing or logged error messages. Use a generic message and rely on secured internal diagnostics for debugging.",
+      "secure_code_snippet": "throw new Error('Missing required environment variable');"
+    },
+    {
+      "id": 2,
+      "file": "input_backup.ts",
+      "line_numbers": [42],
+      "vulnerability_type": "PBKDF2 without iteration limit (DoS risk)",
+      "severity": "Medium",
+      "description": "The code calls crypto.pbkdf2Sync using attacker- or user-controlled iteration counts. Very high iteration values can be abused to block the event loop and cause a DoS.",
+      "fix_explanation": "Enforce a safe upper bound on PBKDF2 iterations or use asynchronous PBKDF2 API and rate limiting. Keep sane defaults and validate iteration counts before performing expensive operations.",
+      "secure_code_snippet": "if (iterations > MAX_PBKDF2_ITERATIONS) return false; // avoid expensive work\nconst derivedCheck = crypto.pbkdf2Sync(...);"
+    }
+  ]
+}
